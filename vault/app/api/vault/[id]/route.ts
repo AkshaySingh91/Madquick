@@ -4,14 +4,12 @@ import { authOptions } from "@/lib/authOptions";
 import { connectToDatabase } from "@/lib/mongodb";
 import { VaultItem } from "@/models/VaultItem";
 
-interface Params {
-  params: { id: string };
-}
+type Context = { params: Promise<{ id: string }> };
 
-export async function PUT(req: NextRequest, { params }: Params) {
+export async function PUT(req: NextRequest, context: Context) {
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  const { id } = params;
+  const { id } = await context.params;
   const { ciphertext, iv } = await req.json();
   if (!ciphertext || !iv) return NextResponse.json({ error: "Invalid payload" }, { status: 400 });
   await connectToDatabase();
@@ -24,10 +22,10 @@ export async function PUT(req: NextRequest, { params }: Params) {
   return NextResponse.json({ item: updated });
 }
 
-export async function DELETE(_: NextRequest, { params }: Params) {
+export async function DELETE(_: NextRequest, context: Context) {
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  const { id } = params;
+  const { id } = await context.params;
   await connectToDatabase();
   const res = await VaultItem.findOneAndDelete({ _id: id, userId: session.user.id });
   if (!res) return NextResponse.json({ error: "Not found" }, { status: 404 });

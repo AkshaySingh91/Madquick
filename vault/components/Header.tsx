@@ -4,7 +4,8 @@ import { useSession, signOut } from "next-auth/react";
 import DarkModeToggle from "./DarkModeToggle";
 
 export default function Header() {
-  const { status } = useSession();
+  const sessionResult = (useSession as unknown as () => { status?: "authenticated" | "unauthenticated" | "loading" })?.();
+  const status = sessionResult?.status ?? "unauthenticated";
   return (
     <header className="w-full max-w-5xl mx-auto px-4 py-3 flex items-center justify-between">
       <Link href="/" className="font-semibold">Vault</Link>

@@ -13,7 +13,10 @@ type VaultPayload = {
 };
 
 export default function VaultPage() {
-  const { data: session, status } = useSession();
+  const sessionResult = (useSession as unknown as () => { data?: { user?: { kdfSalt?: string; id?: string } }; status?: "authenticated" | "unauthenticated" | "loading" })?.();
+  type SessionShape = { user?: { kdfSalt?: string; id?: string } } | null | undefined;
+  const session = sessionResult?.data as SessionShape;
+  const status = sessionResult?.status ?? "unauthenticated";
   const [masterPassword, setMasterPassword] = useState("");
   type ServerItem = { _id: string; ciphertext: string; iv: string };
   const [items, setItems] = useState<ServerItem[]>([]);
@@ -35,7 +38,6 @@ export default function VaultPage() {
 
   useEffect(() => {
     if (status === "authenticated") fetchItems();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [status]);
 
   async function createItem() {
@@ -49,12 +51,12 @@ export default function VaultPage() {
   }
 
   // Example update flow, currently unused in UI
-  async function updateItem(id: string, payload: VaultPayload) {
-    if (!derivedKey) return alert("Enter your master password to encrypt");
-    const { ciphertextBase64, ivBase64 } = encryptJson(payload, derivedKey);
-    const res = await fetch(`/api/vault/${id}`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ciphertext: ciphertextBase64, iv: ivBase64 }) });
-    if (res.ok) fetchItems();
-  }
+  // async function updateItem(id: string, payload: VaultPayload) {
+  //   if (!derivedKey) return alert("Enter your master password to encrypt");
+  //   const { ciphertextBase64, ivBase64 } = encryptJson(payload, derivedKey);
+  //   const res = await fetch(`/api/vault/${id}`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ciphertext: ciphertextBase64, iv: ivBase64 }) });
+  //   if (res.ok) fetchItems();
+  // }
 
   async function deleteItem(id: string) {
     const res = await fetch(`/api/vault/${id}`, { method: "DELETE" });
